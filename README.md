@@ -7,6 +7,7 @@ Prerequisites for all platforms
 -------------------------------
 
  * CMake 2.8.0 or later
+ 
 Linux & macOS
 --------------
 
@@ -19,4 +20,4 @@ USAGE
 =====
 
    * `cd build`
-   * `sudo test/linux/simple_test/simple_test [eth0]`
+   * `sudo test/linux/simple_test/simple_test [ip]`
