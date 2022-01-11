@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "ethercat.h"
 
@@ -30,6 +32,8 @@ void simpletest(char *ifname)
    int i;
    needlf = FALSE;
    inOP = FALSE;
+   // time_t now;
+   struct timeval now;
 
    printf("Starting simple test\n");
 
@@ -48,10 +52,11 @@ void simpletest(char *ifname)
          /* Detect slave ATI EtherCAT OEM from vendor ID and product code */
          if ((ec_slave[1].eep_man == 0x00000732) && (ec_slave[1].eep_id == 0x26483052))
          {
-            printf("Found %s at position %d, ID: %x\n", ec_slave[1].name, ec_slave[1].eep_id, 1);
+            printf("Found %s at position %d, ID: %x\n", ec_slave[1].name, 1, ec_slave[1].eep_id);
          }
          else
          {
+            printf("ERROR: ATI Sensor NOT FOUND or misconfigured.");
          }
 
          /* Manually set SMs for ATI OEM Board*/
@@ -83,6 +88,7 @@ void simpletest(char *ifname)
             printf("Safe-OP state reached for all slaves.\n");
 
             int32_t Fx, Fy, Fz, Tx, Ty, Tz;
+            int32_t Last_Fx;
             int32_t data[6];
             int rdl = 4 * 6, rdlu = 2 * 2;
             uint8 Units[2];
@@ -92,32 +98,40 @@ void simpletest(char *ifname)
             printf("Force Units: %d ,Torque Units: %d\n", Units[0], Units[1]);
             for (i = 1; i <= 1000; i++)
             {
-               ec_send_processdata();
-               ec_receive_processdata(EC_TIMEOUTRET);
-               ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &data, EC_TIMEOUTRXM);
-               // ec_SDOread(1, 0x6000, 0x02, FALSE, &rdl, &Fy, EC_TIMEOUTRXM);
-               // ec_SDOread(1, 0x6000, 0x03, FALSE, &rdl, &Fz, EC_TIMEOUTRXM);
-               // ec_SDOread(1, 0x6000, 0x04, FALSE, &rdl, &Tx, EC_TIMEOUTRXM);
-               // ec_SDOread(1, 0x6000, 0x05, FALSE, &rdl, &Ty, EC_TIMEOUTRXM);
-               // ec_SDOread(1, 0x6000, 0x06, FALSE, &rdl, &Tz, EC_TIMEOUTRXM);
+               do
+               {
+                  ec_send_processdata();
+                  ec_receive_processdata(EC_TIMEOUTRET);
+                  ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &data, EC_TIMEOUTRXM);
+                  // ec_SDOread(1, 0x6000, 0x02, FALSE, &rdl, &Fy, EC_TIMEOUTRXM);
+                  // ec_SDOread(1, 0x6000, 0x03, FALSE, &rdl, &Fz, EC_TIMEOUTRXM);
+                  // ec_SDOread(1, 0x6000, 0x04, FALSE, &rdl, &Tx, EC_TIMEOUTRXM);
+                  // ec_SDOread(1, 0x6000, 0x05, FALSE, &rdl, &Ty, EC_TIMEOUTRXM);
+                  // ec_SDOread(1, 0x6000, 0x06, FALSE, &rdl, &Tz, EC_TIMEOUTRXM);
+                  gettimeofday(&now, NULL);
+               } while (data[0] == Last_Fx); //Avoid stuck
+
                Fx = data[0];
                Fy = data[1];
                Fz = data[2];
                Tx = data[3];
                Ty = data[4];
                Tz = data[5];
+
+               Last_Fx = data[0];
                // printf("No.%d Fx: %.5f Fy: %.5f Fz: %.5f Tx: %.5f Ty: %.5f Tz: %.5f\n",
                //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000, (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
-               printf("%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
-                      i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000, (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
+               printf("%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+                      now.tv_sec * 1000000 + now.tv_usec, i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000, (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
                getchar();
+               osal_usleep(5000);
             }
             osal_usleep(5000);
          }
 
          else
          {
-            printf("Not all slaves reached operational state.\n");
+            printf("\nRetry! Not all slaves reached operational state.\n\n");
             ec_readstate();
             for (i = 1; i <= ec_slavecount; i++)
             {

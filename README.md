@@ -20,10 +20,10 @@ USAGE
 =====
 
    * `cd build`
-   * `sudo test/linux/simple_test/simple_test [eth0]`
+   * `sudo test/linux/simple_test/simple_test [ifname1]`
    
-`[eth0]` is the address for NIC connected to EtherCAT OEM Board. You can get `[eth0]` by running * `ip -d a` in terminal (Ubuntu). `enp0s31f6` for example.
-
+`[ifname1]` is the address for NIC connected to EtherCAT OEM Board. You can get `[ifname1]` by running `ip -d a` in terminal (Ubuntu). `enp0s31f6` or `eth0` for example.
+Press ENTER for next measurement.
 
 <!-- Known Issues
 ============  -->
