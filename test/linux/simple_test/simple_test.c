@@ -18,6 +18,7 @@
 #include "ethercat.h"
 
 #define EC_TIMEOUTMON 500
+#define PRE_CALIBRATION
 
 char IOmap[4096];
 OSAL_THREAD_HANDLE thread1;
@@ -88,6 +89,7 @@ void simpletest(char *ifname)
             printf("Safe-OP state reached for all slaves.\n");
 
             int32_t Fx, Fy, Fz, Tx, Ty, Tz;
+            int32_t Pre_Fx, Pre_Fy, Pre_Fz, Pre_Tx, Pre_Ty, Pre_Tz;
             int32_t Last_Fx;
             int32_t data[6];
             int rdl = 4 * 6, rdlu = 2 * 2;
@@ -96,6 +98,39 @@ void simpletest(char *ifname)
             ec_SDOread(1, 0x2040, 0x29, FALSE, &rdlu, &Units[0], EC_TIMEOUTRXM); //1 Lbf  2 N  3 Klbf  4 kN  5 Kg
             ec_SDOread(1, 0x2040, 0x2a, FALSE, &rdlu, &Units[1], EC_TIMEOUTRXM); //1 Lbf-in  2 Lbf-ft  3 N-m  4 N-mm  5 Kg-cm  6 kN-m
             printf("Force Units: %d ,Torque Units: %d\n", Units[0], Units[1]);
+
+//Pre-Calibration
+#ifdef PRE_CALIBRATION
+            printf("Calibrating, Do not add extra load to the Sensor!\n");
+            i = 1;
+            do
+            {
+               ec_send_processdata();
+               ec_receive_processdata(EC_TIMEOUTRET);
+               ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &data, EC_TIMEOUTRXM);
+
+               if (Last_Fx != data[0])
+               {
+                  Pre_Fx += data[0];
+                  Pre_Fy += data[1];
+                  Pre_Fz += data[2];
+                  Pre_Tx += data[3];
+                  Pre_Ty += data[4];
+                  Pre_Tz += data[5];
+
+                  i++;
+               }
+               Last_Fx = data[0];
+            } while (i <= 10);
+
+            Pre_Fx = Pre_Fx / 10;
+            Pre_Fy = Pre_Fy / 10;
+            Pre_Fz = Pre_Fz / 10;
+            Pre_Tx = Pre_Tx / 10;
+            Pre_Ty = Pre_Ty / 10;
+            Pre_Tz = Pre_Tz / 10;
+#endif
+
             for (i = 1; i <= 1000; i++)
             {
                do
@@ -120,9 +155,12 @@ void simpletest(char *ifname)
 
                Last_Fx = data[0];
                // printf("No.%d Fx: %.5f Fy: %.5f Fz: %.5f Tx: %.5f Ty: %.5f Tz: %.5f\n",
-               //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000, (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
-               printf("%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
-                      now.tv_sec * 1000000 + now.tv_usec, i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000, (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
+               //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000,
+               //        (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
+               printf("%ld,%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+                      now.tv_sec, now.tv_usec, i,
+                      (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
+                      (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
                getchar();
                osal_usleep(5000);
             }
