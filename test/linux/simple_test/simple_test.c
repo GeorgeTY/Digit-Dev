@@ -27,6 +27,7 @@ boolean needlf;
 volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
+int32_t FT_data[6];
 
 void simpletest(char *ifname)
 {
@@ -89,9 +90,8 @@ void simpletest(char *ifname)
             printf("Safe-OP state reached for all slaves.\n");
 
             int32_t Fx, Fy, Fz, Tx, Ty, Tz;
-            int32_t Pre_Fx, Pre_Fy, Pre_Fz, Pre_Tx, Pre_Ty, Pre_Tz;
+            int32_t Pre_Fx = 0, Pre_Fy = 0, Pre_Fz = 0, Pre_Tx = 0, Pre_Ty = 0, Pre_Tz = 0;
             int32_t Last_Fx;
-            int32_t data[6];
             int rdl = 4 * 6, rdlu = 2 * 2;
             uint8 Units[2];
 
@@ -99,28 +99,28 @@ void simpletest(char *ifname)
             ec_SDOread(1, 0x2040, 0x2a, FALSE, &rdlu, &Units[1], EC_TIMEOUTRXM); //1 Lbf-in  2 Lbf-ft  3 N-m  4 N-mm  5 Kg-cm  6 kN-m
             printf("Force Units: %d ,Torque Units: %d\n", Units[0], Units[1]);
 
-//Pre-Calibration
+//Pre-Calibration(Zeroing)
 #ifdef PRE_CALIBRATION
-            printf("Calibrating, Do not add extra load to the Sensor!\n");
+            printf("Calibrating, Do not add extra load to the Sensor!\n\n");
             i = 1;
             do
             {
                ec_send_processdata();
                ec_receive_processdata(EC_TIMEOUTRET);
-               ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &data, EC_TIMEOUTRXM);
+               ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &FT_data, EC_TIMEOUTRXM);
 
-               if (Last_Fx != data[0])
+               if (Last_Fx != FT_data[0])
                {
-                  Pre_Fx += data[0];
-                  Pre_Fy += data[1];
-                  Pre_Fz += data[2];
-                  Pre_Tx += data[3];
-                  Pre_Ty += data[4];
-                  Pre_Tz += data[5];
+                  Pre_Fx += FT_data[0];
+                  Pre_Fy += FT_data[1];
+                  Pre_Fz += FT_data[2];
+                  Pre_Tx += FT_data[3];
+                  Pre_Ty += FT_data[4];
+                  Pre_Tz += FT_data[5];
 
                   i++;
                }
-               Last_Fx = data[0];
+               Last_Fx = FT_data[0];
             } while (i <= 10);
 
             Pre_Fx = Pre_Fx / 10;
@@ -130,35 +130,39 @@ void simpletest(char *ifname)
             Pre_Ty = Pre_Ty / 10;
             Pre_Tz = Pre_Tz / 10;
 #endif
-
+            printf("Data coming! Press ENTER to continue.\n\n");
             for (i = 1; i <= 1000; i++)
             {
                do
                {
                   ec_send_processdata();
                   ec_receive_processdata(EC_TIMEOUTRET);
-                  ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &data, EC_TIMEOUTRXM);
+                  ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &FT_data, EC_TIMEOUTRXM);
                   // ec_SDOread(1, 0x6000, 0x02, FALSE, &rdl, &Fy, EC_TIMEOUTRXM);
                   // ec_SDOread(1, 0x6000, 0x03, FALSE, &rdl, &Fz, EC_TIMEOUTRXM);
                   // ec_SDOread(1, 0x6000, 0x04, FALSE, &rdl, &Tx, EC_TIMEOUTRXM);
                   // ec_SDOread(1, 0x6000, 0x05, FALSE, &rdl, &Ty, EC_TIMEOUTRXM);
                   // ec_SDOread(1, 0x6000, 0x06, FALSE, &rdl, &Tz, EC_TIMEOUTRXM);
                   gettimeofday(&now, NULL);
-               } while (data[0] == Last_Fx); //Avoid stuck
+               } while (FT_data[0] == Last_Fx); //Avoid stuck
 
-               Fx = data[0];
-               Fy = data[1];
-               Fz = data[2];
-               Tx = data[3];
-               Ty = data[4];
-               Tz = data[5];
+               Fx = FT_data[0];
+               Fy = FT_data[1];
+               Fz = FT_data[2];
+               Tx = FT_data[3];
+               Ty = FT_data[4];
+               Tz = FT_data[5];
 
-               Last_Fx = data[0];
+               Last_Fx = FT_data[0];
                // printf("No.%d Fx: %.5f Fy: %.5f Fz: %.5f Tx: %.5f Ty: %.5f Tz: %.5f\n",
                //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000,
                //        (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
-               printf("%ld,%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
-                      now.tv_sec, now.tv_usec, i,
+               // printf("%ld,%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+               //        now.tv_sec, now.tv_usec, i,
+               //        (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
+               //        (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
+               printf("%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+                      i,
                       (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
                       (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
                getchar();
