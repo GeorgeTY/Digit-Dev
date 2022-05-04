@@ -14,6 +14,10 @@
 #include <inttypes.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 #include "ethercat.h"
 
@@ -29,6 +33,8 @@ boolean inOP;
 uint8 currentgroup = 0;
 int32_t FT_data[6];
 
+char buf[1024];
+
 void simpletest(char *ifname)
 {
    int i;
@@ -38,6 +44,48 @@ void simpletest(char *ifname)
    struct timeval now;
 
    printf("Starting simple test\n");
+
+   /* Start Socket*/
+   int sockfd;
+   int client_sockfd;
+   struct sockaddr_in addr;
+
+   socklen_t len = sizeof(struct sockaddr_in);
+   struct sockaddr_in from_addr;
+
+   // Receive buffer initialization
+   memset(buf, 0, sizeof(buf));
+
+   // Socket generation
+   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+   {
+      perror("socket");
+   }
+
+   // Stand-by IP / port number setting
+   addr.sin_family = AF_INET;
+   addr.sin_port = htons(6319);
+   addr.sin_addr.s_addr = INADDR_ANY;
+
+   // bind
+   if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+   {
+      perror("bind");
+   }
+
+   printf("waiting for client's connection..\n");
+   // Waiting for reception
+   if (listen(sockfd, SOMAXCONN) < 0)
+   {
+      perror("listen");
+   }
+
+   // Waiting for a connect request from a client
+   if ((client_sockfd = accept(sockfd, (struct sockaddr *)&from_addr, &len)) < 0)
+   {
+      perror("accept");
+   }
+   /* End Config */
 
    /* initialise SOEM, bind socket to ifname */
    if (ec_init(ifname))
@@ -95,11 +143,11 @@ void simpletest(char *ifname)
             int rdl = 4 * 6, rdlu = 2 * 2;
             uint8 Units[2];
 
-            ec_SDOread(1, 0x2040, 0x29, FALSE, &rdlu, &Units[0], EC_TIMEOUTRXM); //1 Lbf  2 N  3 Klbf  4 kN  5 Kg
-            ec_SDOread(1, 0x2040, 0x2a, FALSE, &rdlu, &Units[1], EC_TIMEOUTRXM); //1 Lbf-in  2 Lbf-ft  3 N-m  4 N-mm  5 Kg-cm  6 kN-m
+            ec_SDOread(1, 0x2040, 0x29, FALSE, &rdlu, &Units[0], EC_TIMEOUTRXM); // 1 Lbf  2 N  3 Klbf  4 kN  5 Kg
+            ec_SDOread(1, 0x2040, 0x2a, FALSE, &rdlu, &Units[1], EC_TIMEOUTRXM); // 1 Lbf-in  2 Lbf-ft  3 N-m  4 N-mm  5 Kg-cm  6 kN-m
             printf("Force Units: %d ,Torque Units: %d\n", Units[0], Units[1]);
 
-//Pre-Calibration(Zeroing)
+// Pre-Calibration(Zeroing)
 #ifdef PRE_CALIBRATION
             printf("Calibrating, Do not add extra load to the Sensor!\n\n");
             i = 1;
@@ -130,44 +178,83 @@ void simpletest(char *ifname)
             Pre_Ty = Pre_Ty / 10;
             Pre_Tz = Pre_Tz / 10;
 #endif
-            printf("Data coming! Press ENTER to continue.\n\n");
+            // Send Operational-Got to Client
+            strcpy(buf, "OPGT");
+            write(client_sockfd, buf, sizeof(buf));
+            int rsize;
+
+            // printf("Data coming! Press ENTER to continue.\n\n");
             for (i = 1; i <= 1000; i++)
             {
-               do
+               memset(buf, 0, strlen(buf));
+               rsize = recv(client_sockfd, buf, sizeof(buf), 0);
+               printf("recved: %d\n", rsize);
+
+               if (rsize == 0)
                {
-                  ec_send_processdata();
-                  ec_receive_processdata(EC_TIMEOUTRET);
-                  ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &FT_data, EC_TIMEOUTRXM);
-                  // ec_SDOread(1, 0x6000, 0x02, FALSE, &rdl, &Fy, EC_TIMEOUTRXM);
-                  // ec_SDOread(1, 0x6000, 0x03, FALSE, &rdl, &Fz, EC_TIMEOUTRXM);
-                  // ec_SDOread(1, 0x6000, 0x04, FALSE, &rdl, &Tx, EC_TIMEOUTRXM);
-                  // ec_SDOread(1, 0x6000, 0x05, FALSE, &rdl, &Ty, EC_TIMEOUTRXM);
-                  // ec_SDOread(1, 0x6000, 0x06, FALSE, &rdl, &Tz, EC_TIMEOUTRXM);
-                  gettimeofday(&now, NULL);
-               } while (FT_data[0] == Last_Fx); //Avoid stuck
+                  printf("rsize = 0");
+                  // return;
+               }
+               else if (rsize == -1)
+               {
+                  perror("recv");
+               }
+               else
+               {
+                  printf("recv: %s\n", buf);
+                  if (strcmp(buf, "REQD") == 0)
+                  {
+                     printf("Getting Data\n");
+                     do
+                     {
+                        ec_send_processdata();
+                        ec_receive_processdata(EC_TIMEOUTRET);
+                        ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &FT_data, EC_TIMEOUTRXM);
+                        // ec_SDOread(1, 0x6000, 0x02, FALSE, &rdl, &Fy, EC_TIMEOUTRXM);
+                        // ec_SDOread(1, 0x6000, 0x03, FALSE, &rdl, &Fz, EC_TIMEOUTRXM);
+                        // ec_SDOread(1, 0x6000, 0x04, FALSE, &rdl, &Tx, EC_TIMEOUTRXM);
+                        // ec_SDOread(1, 0x6000, 0x05, FALSE, &rdl, &Ty, EC_TIMEOUTRXM);
+                        // ec_SDOread(1, 0x6000, 0x06, FALSE, &rdl, &Tz, EC_TIMEOUTRXM);
+                        gettimeofday(&now, NULL);
+                        usleep(1000);
+                        printf("Loop\n");
+                     } while (FT_data[0] == Last_Fx); // Avoid stuck
 
-               Fx = FT_data[0];
-               Fy = FT_data[1];
-               Fz = FT_data[2];
-               Tx = FT_data[3];
-               Ty = FT_data[4];
-               Tz = FT_data[5];
+                     Fx = FT_data[0];
+                     Fy = FT_data[1];
+                     Fz = FT_data[2];
+                     Tx = FT_data[3];
+                     Ty = FT_data[4];
+                     Tz = FT_data[5];
 
-               Last_Fx = FT_data[0];
-               // printf("No.%d Fx: %.5f Fy: %.5f Fz: %.5f Tx: %.5f Ty: %.5f Tz: %.5f\n",
-               //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000,
-               //        (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
-               // printf("%ld,%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
-               //        now.tv_sec, now.tv_usec, i,
-               //        (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
-               //        (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
-               printf("%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
-                      i,
-                      (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
-                      (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
-               getchar();
-               osal_usleep(5000);
+                     Last_Fx = FT_data[0];
+
+                     // Send to Client
+                     sprintf(buf, "%.5f", (Fz - Pre_Fz) / 1000000.0);
+                     write(client_sockfd, buf, sizeof(buf));
+                     printf("Printed to Socket: %s\n", buf);
+
+                     // printf("No.%d Fx: %.5f Fy: %.5f Fz: %.5f Tx: %.5f Ty: %.5f Tz: %.5f\n",
+                     //        i, (double)Fx / 1000000, (double)Fy / 1000000, (double)Fz / 1000000,
+                     //        (double)Tx / 1000000, (double)Ty / 1000000, (double)Tz / 1000000);
+                     // printf("%ld,%ld,%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+                     //        now.tv_sec, now.tv_usec, i,
+                     //        (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
+                     //        (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
+                     printf("%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
+                            i,
+                            (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
+                            (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
+                     // getchar();
+                     osal_usleep(5000);
+                  }
+                  else
+                  {
+                     printf("Not REQD\n");
+                  }
+               }
             }
+
             osal_usleep(5000);
          }
 
@@ -194,8 +281,15 @@ void simpletest(char *ifname)
          printf("No slaves found!\n");
       }
       printf("End simple test, close socket\n");
+
+      strcpy(buf, "OPFL");
+      write(client_sockfd, buf, sizeof(buf));
+
       /* stop SOEM, close socket */
       ec_close();
+
+      close(client_sockfd);
+      close(sockfd);
    }
    else
    {
