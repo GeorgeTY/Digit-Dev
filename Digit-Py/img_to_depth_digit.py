@@ -15,7 +15,6 @@ def fishye_calib(img, para):
 
 
 class ImageToDepth(object):
-
     def __init__(self, folder):
         # folder = "digiteye/calibrate_ball"
         # folder = "digiteye/calibrate_ballR2"
@@ -24,30 +23,34 @@ class ImageToDepth(object):
         # folder = "digiteye/R_calibrate_ballR2"
 
         self.camera_parameter = pickle.load(
-            open("/home/jiangxin/ATISensor/digit-main/digiteye/cam/cam2_calib.pkl", 'rb'))
-        self.lookup_table = pickle.load(
-            open(folder + '/Lookuptable.pkl', 'rb'))
+            open(
+                "/home/jiangxin/uwu-dev/Digit-Dev/Digit-Py/digiteye/cam/cam2_calib.pkl",
+                "rb",
+            )
+        )
+        self.lookup_table = pickle.load(open(folder + "/Lookuptable.pkl", "rb"))
         self.border = self.lookup_table[9]
         # ./0.jpg是无按压情况下的rgb图像，应该是用于与按压情况下的rgb求差
-        frame0 = cv2.imread(folder + '/0.jpg')
+        frame0 = cv2.imread(folder + "/0.jpg")
         f0 = self._init_frame(fishye_calib(frame0, self.camera_parameter))
         # self.f0 = f0[101: 381, 189: 472, :]   # cam2
-        self.f0 = f0[self.border[0]: self.border[1],
-                     self.border[2]: self.border[3], :]
+        self.f0 = f0[
+            self.border[0] : self.border[1], self.border[2] : self.border[3], :
+        ]
         # self.pix_to_mm = self.lookup_table[7]
-        self.pix_to_mm = 2.5*6/286
+        self.pix_to_mm = 2.5 * 6 / 286
 
     def _init_frame(self, frame0):
         sigma = 50
         # 高斯滤波（线性平滑滤波）用于消除高斯噪声，图像的减噪
         f0 = cv2.GaussianBlur(frame0, (99, 99), sigma)
         height, width = frame0.shape[:2]
-        frame0_ = frame0.astype('float32')
+        frame0_ = frame0.astype("float32")
         dI = np.mean(f0 - frame0_, 2)  # 取平均值
-        mask = (dI < 5).astype('uint8')
+        mask = (dI < 5).astype("uint8")
         mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
         f0 = f0 - f0 * mask * 0.85 + mask * frame0_ * 0.85
-        f0 = f0.astype('uint8')
+        f0 = f0.astype("uint8")
         return f0
 
     def _match_grd_bnz(self, LookupTable, dI, f0, f01=None, validmask=None):
@@ -114,36 +117,42 @@ class ImageToDepth(object):
         gxx = np.zeros((ydim, xdim))
         gyy = np.zeros((ydim, xdim))
         f = np.zeros((ydim, xdim))
-        gyy[1:ydim, 0:xdim-1] = gy[1:ydim, 0:xdim-1]-gy[0:ydim-1, 0:xdim-1]
-        gxx[0:ydim-1, 1:xdim] = gx[0:ydim-1, 1:xdim]-gx[0:ydim-1, 0:xdim-1]
+        gyy[1:ydim, 0 : xdim - 1] = (
+            gy[1:ydim, 0 : xdim - 1] - gy[0 : ydim - 1, 0 : xdim - 1]
+        )
+        gxx[0 : ydim - 1, 1:xdim] = (
+            gx[0 : ydim - 1, 1:xdim] - gx[0 : ydim - 1, 0 : xdim - 1]
+        )
         f = gxx + gyy
         height, width = f.shape[:2]
-        f2 = f[1: height - 1, 1: width - 1]
+        f2 = f[1 : height - 1, 1 : width - 1]
         tt = dst(f2.T, type=1).T / 2
-        f2sin = (dst(tt, type=1)/2)
-        x, y = np.meshgrid(np.arange(1, xdim-1), np.arange(1, ydim-1))
-        denom = (2*np.cos(np.pi * x/(xdim-1))-2) + \
-            (2*np.cos(np.pi*y/(ydim-1)) - 2)
-        f3 = f2sin/denom
-        tt = np.real(idst(f3, type=1, axis=0))/(f3.shape[0]+1)
-        img_tt = (np.real(idst(tt.T, type=1, axis=0))/(tt.T.shape[0]+1)).T
+        f2sin = dst(tt, type=1) / 2
+        x, y = np.meshgrid(np.arange(1, xdim - 1), np.arange(1, ydim - 1))
+        denom = (2 * np.cos(np.pi * x / (xdim - 1)) - 2) + (
+            2 * np.cos(np.pi * y / (ydim - 1)) - 2
+        )
+        f3 = f2sin / denom
+        tt = np.real(idst(f3, type=1, axis=0)) / (f3.shape[0] + 1)
+        img_tt = (np.real(idst(tt.T, type=1, axis=0)) / (tt.T.shape[0] + 1)).T
         # 此时处理的图片尺寸维度对应的是标定digit过程中，裁剪的第一帧图像的尺寸
         img_direct = np.zeros((ydim, xdim))
         height, width = img_direct.shape[:2]
-        img_direct[1: height - 1, 1: width - 1] = img_tt
+        img_direct[1 : height - 1, 1 : width - 1] = img_tt
         return img_direct
 
     def convert(self, img):
         img = fishye_calib(img, self.camera_parameter)
         # initialize
         height, width = img.shape[:2]
-        frame_ = img[self.border[0]: self.border[1],
-                     self.border[2]: self.border[3], :]
+        frame_ = img[
+            self.border[0] : self.border[1], self.border[2] : self.border[3], :
+        ]
         I = np.asfarray(frame_, float) - self.f0
         ImGradX, ImGradY, ImGradMag, ImGradDir = self._match_grd_bnz(
-            self.lookup_table, I, self.f0)
-        hm = self._fast_poisson(ImGradX, ImGradY) * \
-            self.pix_to_mm  # hm是高度图，是转化后的实际深度
+            self.lookup_table, I, self.f0
+        )
+        hm = self._fast_poisson(ImGradX, ImGradY) * self.pix_to_mm  # hm是高度图，是转化后的实际深度
         height, width = hm.shape[:2]
         hm[hm < 0] = 0
         d_ptcd = np.zeros((height * width, 3))
@@ -153,7 +162,7 @@ class ImageToDepth(object):
         d_ptcd[:, 0] = xgrid.flatten()
         d_ptcd[:, 1] = ygrid.flatten()
         # d_ptcd[:, 2] = hm.flatten()*2   #原本的，*20应该是为了在点云图中更加清晰的显示数据
-        d_ptcd[:, 2] = hm.flatten()*1  # jhz更改，在点云图中使用原本的数据，不进行放大
+        d_ptcd[:, 2] = hm.flatten() * 1  # jhz更改，在点云图中使用原本的数据，不进行放大
         # return d_ptcd, hm , ImGradX, ImGradY,ImGradMag        #output1:显示的点云信息； output2：深度信息；output3：梯度信息
         return d_ptcd, hm, ImGradMag  # output1:显示的点云信息； output2：深度信息；output3：梯度信息
 

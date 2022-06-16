@@ -17,7 +17,7 @@ port = 6319
 width, height = 640, 480
 width_splitter, height_splitter = 640 / 4, 480 / 3
 itd_cvter = itd.ImageToDepth(
-    "/home/jiangxin/ATISensor/digit-main/digiteye/calibrate_D20299_0504_2"
+    "/home/jiangxin/uwu-dev/Digit-Dev/Digit-Py/digiteye/calibrate_D20299_0504_2"
 )
 
 sudo_password = "hitsz666"

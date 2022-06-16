@@ -1,6 +1,9 @@
-# Table of Contents
+# Digit 标定流程
+
+## Table of Contents
 1. [Introduction](#introduction)
     1. [Requirements](#requirements)
+    2. [Overview](#overview)
 2. [Usage](#usage)
 3. [Known Issues](#known-issues)
 
@@ -16,18 +19,30 @@
 * **PoE 电源**（ATI Nano-17的要求，最好选择可以自适应供电的型号，以免网线接错）
 
 ### Overview
-Python脚本与SOEM通过Socket通讯（端口`6319`）
+Python脚本与SOEM通过Socket通讯（端口`6319`）。当Python脚本收到从SOEM发来的 `OPGT` 时，进入可以读取传感器数值的状态。从Python脚本向SOEM发读取数据请求 `REQD` 后，SOEM将当前力/力矩数据发回Python脚本。
 
 ```mermaid
-graph TD;
-    B["fa:fa-twitter for peace"]
-    B-->C[fa:fa-ban forbidden]
-    B-->D(fa:fa-spinner);
-    B-->E(A fa:fa-camera-retro perhaps?)
-    A[Hard edge] -->|Link text| B(Round edge)
-    B --> C{Decision}
-    C -->|One| D[Result one]
-    C -->|Two| E[Result two]
+flowchart TD;
+    subgraph main[程序框图]
+
+        direction TB
+        subgraph one[程序初始化]
+            A[Python Script] -->|由Subprocess库启动| F[SOEM Executable]
+            F --> |建立Socket连接| A
+            subgraph three[SOEM 建立EtherCAT连接]
+                F --> |EtherCAT连接失败| C[OPFL]
+                F --> |EtherCAT连接成功| D[OPGT]
+            end
+        end
+
+        subgraph two[数据沟通]
+            B[Python Script] -->|REQD| G[SOEM Executable]
+            G --> |力/力矩数据| B
+        end
+
+        D --> two
+
+    end
 ```
 
 
@@ -35,7 +50,8 @@ graph TD;
 
 1. 网线连接、PoE供电无误后，将圆形的ATI EtherCAT OEM板连接到PC上的Intel网口，几秒后应看到板上闪绿灯，表示供电成功。如果没看到灯亮，请检查供电。
 2. 在终端里使用 `ifconfig` 命令查看连接ATI EtherCAT OEM板对应的网卡地址，例如 `enp0s31f6` 。
-3. 打开 `Digit-Py/calibrate_force.py`，修改 `line 23` 对应的 `sudo_password` 为你用户对应的用户密码。
-4. 在
+3. 打开 `Digit-Py/calibrate_force.py`，修改 `line 23` 对应的 `sudo_password` 为你用户对应的用户密码，修改 `line 24` 对应的 `command` 内的网卡地址为你对应的网卡地址。
+4. 在 `Digit-Py` 目录内启动终端，使用 `Python` 运行 `./calibrate_force.py`。
+
 
 ## Known Issues
