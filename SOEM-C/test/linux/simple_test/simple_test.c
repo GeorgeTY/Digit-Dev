@@ -230,7 +230,8 @@ void simpletest(char *ifname)
                      Last_Fx = FT_data[0];
 
                      // Send to Client
-                     sprintf(buf, "%.5f", (Fz - Pre_Fz) / 1000000.0);
+                     sprintf(buf, "%.5f,%.5f,%.5f,%.5f,%.5f,%.5f", (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
+                             (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
                      write(client_sockfd, buf, sizeof(buf));
                      printf("Printed to Socket: %s\n", buf);
 
@@ -241,6 +242,8 @@ void simpletest(char *ifname)
                      //        now.tv_sec, now.tv_usec, i,
                      //        (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,
                      //        (double)(Tx - Pre_Tx) / 1000000, (double)(Ty - Pre_Ty) / 1000000, (double)(Tz - Pre_Tz) / 1000000);
+
+                     // Print to Console
                      printf("%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n",
                             i,
                             (double)(Fx - Pre_Fx) / 1000000, (double)(Fy - Pre_Fy) / 1000000, (double)(Fz - Pre_Fz) / 1000000,

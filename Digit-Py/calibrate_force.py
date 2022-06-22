@@ -51,6 +51,9 @@ def main():
     elif response == "OPFL":
         print("Operational-Fail")
         print("Exiting")
+        cmd1.kill()
+        cmd2.kill()
+        client.close()
         exit()
 
     timeout = time.time() + 2

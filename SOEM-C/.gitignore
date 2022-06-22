@@ -1,4 +1,5 @@
 build*
+release*
 install
 *~
 /doc/latex
