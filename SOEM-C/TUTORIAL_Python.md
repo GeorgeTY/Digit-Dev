@@ -23,7 +23,7 @@
 Python脚本与SOEM通过Socket通讯（端口`6319`）。当Python脚本收到从SOEM发来的 `OPGT` 时，进入可以读取传感器数值的状态。从Python脚本向SOEM发读取数据请求 `REQD` 后，SOEM将当前力/力矩数据发回Python脚本。
 
 ```mermaid
-flowchart TD;
+flowchart TD
     direction TB
     subgraph one[程序初始化]
         A[Python Script] -->|由Subprocess库启动| F[SOEM Executable]
