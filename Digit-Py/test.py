@@ -1,10 +1,16 @@
-import numpy as np
+import digit_interface as Digit
 
-width, height = 640, 480
-width_splitter, height_splitter = 640 / 4, 480 / 4
-width_Distribution = np.arange(0, 640 + 1, width_splitter, dtype=int)
-height_Distribution = np.arange(0, 480 + 1, height_splitter, dtype=int)
-width_Distribution[-1] = width - 1
-height_Distribution[-1] = height - 1
-print(width_Distribution)
-print(height_Distribution)
+# digits = Digit.DigitHandler.list_digits()
+# print(digits)
+
+
+# d20299 = Digit.Digit("D20299")
+# d20299.connect()
+# d20299.set_intensity(5)
+# d20299.show_view()
+
+
+d00047 = Digit.Digit("D00047")
+d00047.connect()
+d00047.set_intensity(0)
+d00047.show_view()

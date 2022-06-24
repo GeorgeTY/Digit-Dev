@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 itd_cvter = itd.ImageToDepth(
-    "/home/jiangxin/ATISensor/digit-main/digiteye/calibrate_D20299_0504_2"
+    "/home/jiangxin/uwu-dev/Digit-Dev/Digit-Py/digiteye/calibrate_D20299_0504_2"
 )
 
 

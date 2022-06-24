@@ -1,3 +1,4 @@
+import csv
 import time
 import socket
 import subprocess
@@ -57,6 +58,7 @@ def main():
         client.close()
         exit()
 
+    i = 0
     while True:
         key = getchar()
         print("You pressed %c (%i)" % (key, ord(key)))
@@ -72,6 +74,16 @@ def main():
 
             if force != "":
                 print("Preview: %s" % response.decode())
+                i = i + 1
+                with open("output.csv", "a") as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(
+                        [
+                            i,
+                            force,
+                        ]
+                    )
+                    print("Wrote to CSV: %s" % force)
 
         if key == "q":
             print("Exiting")
