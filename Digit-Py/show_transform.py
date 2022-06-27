@@ -1,15 +1,15 @@
 import sys
-from tkinter import Frame
 import cv2
 import csv
 import numpy as np
+import scipy.ndimage as ndi
 import digit_interface as Digit
 
 
 def connectDigit():
     digits = Digit.DigitHandler.list_digits()
     if len(digits) == 0:
-        sys.exit("No Digit Found")
+        sys.exit("No Digit Found uwu")
 
     digit = Digit.Digit(digits[0]["serial"])
     digit.connect()
@@ -20,24 +20,94 @@ def connectDigit():
 def main():
     digit = connectDigit()
 
-    # digit.show_view()
+    # digit.show_view(digit.get_frame())  # Show difference
 
-    detector = cv2.SimpleBlobDetector_create()
+    # train_img = digit.get_frame()
+    # train_img_bw = cv2.cvtColor(train_img, cv2.COLOR_BGR2GRAY)
+
+    # orb = cv2.ORB_create()
+
+    for _ in range(30):
+        Frm0 = digit.get_frame()
+    ## Show Frm0
+    # cv2.imshow("Frm0", Frm0)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    ## GaussianBlur I0
+    # kernel = np.ones((25, 25), np.float32) / (25 ** 2)
+    # I0 = cv2.filter2D(Frm0, -1, kernel)
+    # cv2.imshow("Background", I0)
+
+    blobParams = cv2.SimpleBlobDetector_Params()
+
+    blobParams.minThreshold = 0
+    blobParams.maxThreshold = 255
+
+    blobParams.filterByArea = True
+    blobParams.minArea = 10
+    blobParams.maxArea = 1000
+
+    blobParams.filterByCircularity = True
+    blobParams.minCircularity = 0.8
+
+    blobParams.filterByConvexity = True
+    blobParams.minConvexity = 0.8
+
+    blobParams.filterByInertia = True
+    blobParams.minInertiaRatio = 0.01
+
+    blobDetector = cv2.SimpleBlobDetector_create(blobParams)
+
     while True:
-        # frame = cv2.cvtColor(digit.get_frame(), cv2.COLOR_BGR2GRAY)
-        frame = digit.get_frame()
+        Frm = digit.get_frame()
 
-        keypoints = detector.detect(frame)
-        im_with_keypoints = cv2.drawKeypoints(
-            frame,
+        ## Gaussian Method
+        # dI = Frm - I0
+        # m = cv2.cvtColor(
+        #     (cv2.threshold(dI, 180, 255, cv2.THRESH_BINARY)[1]), cv2.COLOR_BGR2GRAY
+        # )
+        # cv2.imshow("Difference", dI)
+        # cv2.imshow("Mask", m)
+
+        ## Dot detection
+        keypoints = blobDetector.detect(Frm)
+        frm_with_keypoints = cv2.drawKeypoints(
+            Frm,
             keypoints,
             np.array([]),
-            (0, 0, 255),
+            (50, 50, 150),
             cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
         )
-        cv2.imshow("Keypoints", im_with_keypoints)
+
+        ## Find circles grid
+        # frm_with_keypoints_gray = cv2.cvtColor(frm_with_keypoints, cv2.COLOR_BGR2GRAY)
+        # ret, corners = cv2.findCirclesGrid(
+        #     frm_with_keypoints_gray, (3, 3), cv2.CALIB_CB_SYMMETRIC_GRID
+        # )
+        # if ret:
+        #     cv2.drawChessboardCorners(frm_with_keypoints, (3, 3), corners, ret)
+
+        for keypoint in keypoints:
+            cv2.circle(
+                frm_with_keypoints,
+                (int(keypoint.pt[0]), int(keypoint.pt[1])),
+                1,
+                (0, 0, 255),
+                -1,
+            )
+        cv2.imshow("Keypoints", frm_with_keypoints)
+
+        # cv2.moveWindow("Background", 0, 100)
+        # cv2.moveWindow("Difference", 400, 100)
+        # cv2.moveWindow("Mask", 400, 530)
+        # cv2.moveWindow("Keypoints", 800, 100)
+        cv2.moveWindow("Keypoints", 100, 100)
+
         if cv2.waitKey(1) == 27:
             break
+
+    ## Turn off the digit
     digit.disconnect()
 
 

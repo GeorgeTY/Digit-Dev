@@ -1,4 +1,3 @@
-from tkinter.tix import DirTree
 import cv2
 import pickle
 import numpy as np
