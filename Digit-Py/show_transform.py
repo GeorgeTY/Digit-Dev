@@ -96,6 +96,15 @@ def main():
                 (0, 0, 255),
                 -1,
             )
+        frm_with_keypoints = cv2.putText(
+            frm_with_keypoints,
+            "{}".format(len(keypoints)),
+            (5, 315),
+            cv2.FONT_HERSHEY_COMPLEX,
+            0.5,
+            (255, 255, 255),
+            1,
+        )
         cv2.imshow("Keypoints", frm_with_keypoints)
 
         # cv2.moveWindow("Background", 0, 100)
@@ -104,7 +113,69 @@ def main():
         # cv2.moveWindow("Keypoints", 800, 100)
         cv2.moveWindow("Keypoints", 100, 100)
 
-        if cv2.waitKey(1) == 27:
+        getKey = cv2.waitKey(1)
+        if getKey == 27:  # ESC
+            break
+        elif getKey == ord("d"):  # Show difference
+            digit.show_view(digit.get_frame())
+            cv2.waitKey(0)
+            break
+        elif getKey == ord("o"):  # Get original frame
+            keypoints_a = keypoints
+            Frm_a = Frm
+        elif getKey == ord("c"):  # Capture difference
+            keypoints_b = keypoints
+            Frm_b = Frm
+            frm_with_keypoints = cv2.drawKeypoints(
+                Frm,
+                keypoints_a,
+                np.array([]),
+                (50, 50, 150),
+                cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+            )
+            for keypoint in keypoints_a:
+                cv2.circle(
+                    frm_with_keypoints,
+                    (int(keypoint.pt[0]), int(keypoint.pt[1])),
+                    1,
+                    (0, 0, 255),
+                    -1,
+                )
+            frm_with_keypoints = cv2.putText(
+                frm_with_keypoints,
+                "Frm_A: {}".format(len(keypoints_a)),
+                (5, 315),
+                cv2.FONT_HERSHEY_COMPLEX,
+                0.5,
+                (255, 255, 255),
+                1,
+            )
+            frm_with_keypoints = cv2.drawKeypoints(
+                frm_with_keypoints,
+                keypoints_b,
+                np.array([]),
+                (150, 50, 50),
+                cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+            )
+            for keypoint in keypoints_b:
+                cv2.circle(
+                    frm_with_keypoints,
+                    (int(keypoint.pt[0]), int(keypoint.pt[1])),
+                    1,
+                    (255, 0, 0),
+                    -1,
+                )
+            frm_with_keypoints = cv2.putText(
+                frm_with_keypoints,
+                "Frm_B: {}".format(len(keypoints_b)),
+                (100, 315),
+                cv2.FONT_HERSHEY_COMPLEX,
+                0.5,
+                (255, 255, 255),
+                1,
+            )
+            cv2.imshow("Captured", frm_with_keypoints)
+            cv2.waitKey(0)
             break
 
     ## Turn off the digit
