@@ -1,9 +1,10 @@
 import sys
 import cv2
-import csv
+import time
 import numpy as np
-import scipy.ndimage as ndi
 import digit_interface as Digit
+import matplotlib.pyplot as plt
+from pycpd import AffineRegistration
 
 
 def connectDigit(intensity=8):
@@ -75,6 +76,14 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
     return keypoints, frm_with_keypoints
 
 
+def dotMatching(X, Y):
+    for i in range(len(X)):
+        for j in range(len(Y)):
+            if np.linalg.norm(X[i] - Y[j]) < 10:
+                return True
+    return
+
+
 def main():
     digit = connectDigit()
 
@@ -102,6 +111,7 @@ def main():
         elif getKey == ord("o"):  # Get original frame
             Frm_a = Frm
             keypoints_a = keypoints
+            X = np.array([keypoint.pt for keypoint in keypoints_a])
             print("Original Frame Got.")
         elif getKey == ord("c"):  # Capture difference
             digit.show_view(digit.get_frame())
@@ -111,54 +121,11 @@ def main():
             while True:
                 Frm = digit.get_frame()
                 keypoints_b, Frm_b = dotDetection(blobDetector, Frm)
-                frm_with_keypoints = cv2.drawKeypoints(
-                    Frm,
-                    keypoints_a,
-                    np.array([]),
-                    (50, 50, 150),
-                    cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
-                )
-                for keypoint in keypoints_a:
-                    cv2.circle(
-                        frm_with_keypoints,
-                        (int(keypoint.pt[0]), int(keypoint.pt[1])),
-                        1,
-                        (0, 0, 255),
-                        -1,
-                    )
-                frm_with_keypoints = cv2.putText(
-                    frm_with_keypoints,
-                    "Frm_A: {}".format(len(keypoints_a)),
-                    (5, 315),
-                    cv2.FONT_HERSHEY_COMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    1,
-                )
-                frm_with_keypoints = cv2.drawKeypoints(
-                    frm_with_keypoints,
-                    keypoints_b,
-                    np.array([]),
-                    (150, 50, 50),
-                    cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
-                )
-                for keypoint in keypoints_b:
-                    cv2.circle(
-                        frm_with_keypoints,
-                        (int(keypoint.pt[0]), int(keypoint.pt[1])),
-                        1,
-                        (255, 0, 0),
-                        -1,
-                    )
-                frm_with_keypoints = cv2.putText(
-                    frm_with_keypoints,
-                    "Frm_B: {}".format(len(keypoints_b)),
-                    (100, 315),
-                    cv2.FONT_HERSHEY_COMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    1,
-                )
+                Y = np.array([keypoint.pt for keypoint in keypoints_b])
+                TY, ((s, R), t) = AffineRegistration(
+                    **{"X": X, "Y": Y}
+                ).register()  ## CPD registration
+
                 cv2.imshow("Difference", frm_with_keypoints)
                 getKey = cv2.waitKey(1)
                 if getKey == 27:  # ESC
