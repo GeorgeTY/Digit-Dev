@@ -49,7 +49,7 @@ def setDetectionParams():
 
 def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
     keypoints = blobDetector.detect(Frm)
-    frm_with_keypoints = cv2.drawKeypoints(
+    Frm_with_keypoints = cv2.drawKeypoints(
         Frm,
         keypoints,
         np.array([]),
@@ -58,14 +58,14 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
     )
     for keypoint in keypoints:
         cv2.circle(
-            frm_with_keypoints,
+            Frm_with_keypoints,
             (int(keypoint.pt[0]), int(keypoint.pt[1])),
             1,
             circleColor,
             -1,
         )
-    frm_with_keypoints = cv2.putText(
-        frm_with_keypoints,
+    Frm_with_keypoints = cv2.putText(
+        Frm_with_keypoints,
         "{}".format(len(keypoints)),
         (5, 315),
         cv2.FONT_HERSHEY_COMPLEX,
@@ -73,7 +73,7 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
         (255, 255, 255),
         1,
     )
-    return keypoints, frm_with_keypoints
+    return keypoints, Frm_with_keypoints
 
 
 def dotMatching(X, Y):
@@ -100,9 +100,9 @@ def main():
         Frm = digit.get_frame()
 
         ## Dot detection
-        keypoints, frm_with_keypoints = dotDetection(blobDetector, Frm)
+        keypoints, Frm_with_keypoints = dotDetection(blobDetector, Frm)
 
-        cv2.imshow("Keypoints", frm_with_keypoints)
+        cv2.imshow("Keypoints", Frm_with_keypoints)
         cv2.moveWindow("Keypoints", 100, 100)
 
         getKey = cv2.waitKey(1)
@@ -125,8 +125,12 @@ def main():
                 TY, ((s, R), t) = AffineRegistration(
                     **{"X": X, "Y": Y}
                 ).register()  ## CPD registration
+                print("TY: ", TY)
+                print("s: ", s)
+                print("R: ", R)
+                print("t: ", t)
 
-                cv2.imshow("Difference", frm_with_keypoints)
+                cv2.imshow("Difference", Frm_with_keypoints)
                 getKey = cv2.waitKey(1)
                 if getKey == 27:  # ESC
                     break
