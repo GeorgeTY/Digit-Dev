@@ -1,12 +1,10 @@
 import sys
-from turtle import dot
 import cv2
 import time
 import numpy as np
 import digit_interface as Digit
 import matplotlib.pyplot as plt
 from pycpd import AffineRegistration
-from torch import argmin
 
 # ifVGA = True
 ifVGA = False

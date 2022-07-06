@@ -1,9 +1,7 @@
-from dis import dis
 import cv2
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from pycpd import AffineRegistration
 from show_transform import dotDetection, dotMatching, dotRegistration
 
 
