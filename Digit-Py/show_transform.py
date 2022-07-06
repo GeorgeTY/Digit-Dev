@@ -93,17 +93,21 @@ def dotRegistration(keypoints_a, keypoints_b):
     X = np.array([keypoint.pt for keypoint in keypoints_a])
     Y = np.array([keypoint.pt for keypoint in keypoints_b])
 
-    TY, (G, W) = DeformableRegistration(
+    TY, (G, W, P) = DeformableRegistration(
         **{"X": X, "Y": Y}
     ).register()  ## CPD registration
 
-    return X, Y, TY, G, W
+    return X, Y, TY, G, W, P
 
 
-def dotMatching(X, Y, TY, Frm0, Frm, scale=2):
+def getRegParam(self):
+    return self.G, self.W, self.P
+
+
+def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
     distance, dotPair = np.zeros((len(X), len(Y))), np.zeros((len(X), len(Y)))
 
-    Frm_dot_movement = cv2.addWeighted(Frm, 0.65, Frm0, 0.35, 0)
+    Frm_dot_movement = cv2.addWeighted(Frm, 0.5, Frm0, 0.5, 0)
     Frm_dot_movement = cv2.resize(
         Frm_dot_movement,
         (scale * Frm_dot_movement.shape[1], scale * Frm_dot_movement.shape[0]),
@@ -127,6 +131,10 @@ def dotMatching(X, Y, TY, Frm0, Frm, scale=2):
                 )
                 break
     return Frm_dot_movement, dotPair
+
+
+## Add P output to existing function
+DeformableRegistration.get_registration_parameters = getRegParam
 
 
 def main():
@@ -176,8 +184,8 @@ def main():
                 if len(keypoints_a) != len(keypoints_b):
                     continue
 
-                X, Y, TY, G, W = dotRegistration(keypoints_a, keypoints_b)
-                Frm_dot_movement, dotPair = dotMatching(X, Y, TY, Frm_a, Frm_b)
+                X, Y, TY, G, W, P = dotRegistration(keypoints_a, keypoints_b)
+                Frm_dot_movement, dotPair = dotMatching(X, Y, TY, P, Frm_a, Frm_b)
 
                 videoOut.write(Frm_dot_movement)
 
