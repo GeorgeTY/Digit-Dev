@@ -5,6 +5,7 @@ import numpy as np
 import digit_interface as Digit
 import matplotlib.pyplot as plt
 from pycpd import DeformableRegistration
+from torch import argmax
 
 # ifVGA = True
 ifVGA = False
@@ -105,31 +106,61 @@ def getRegParam(self):
 
 
 def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
-    distance, dotPair = np.zeros((len(X), len(Y))), np.zeros((len(X), len(Y)))
+    dotPair = np.zeros_like(P)
 
-    Frm_dot_movement = cv2.addWeighted(Frm, 0.5, Frm0, 0.5, 0)
+    Frm_dot_movement = cv2.addWeighted(Frm, 0.65, Frm0, 0.35, 0)
     Frm_dot_movement = cv2.resize(
         Frm_dot_movement,
         (scale * Frm_dot_movement.shape[1], scale * Frm_dot_movement.shape[0]),
         interpolation=cv2.INTER_AREA,
     )
 
-    ## Gaussian Kernel
+    ## Dot matching using P
+    while True:
+        continueFlag = False
+        for i in range(np.shape(P)[0]):
+            argmax_j = np.argmax(P[i][:])
+            # dotPairProb[i][argmax_j] = P[i][argmax_j]
+            if np.count_nonzero(dotPair[:][argmax_j]) > 0:
+                j = argmax_j
+                argmax_i = np.argmax(dotPair[:][argmax_j])
+                if P[i][j] > dotPair[argmax_i][j]:
+                    dotPair[i][j] = P[i][j]
+                    dotPair[argmax_i][j] = 0
+                    P[argmax_i][j] = 0
+                else:
+                    P[i][j] = 0
+            else:
+                dotPair[i][argmax_j] = P[i][argmax_j]
 
-    for i in range(len(X)):
-        for j in range(len(Y)):
-            if dotPair[i, j] > 0:
+        for i in range(np.shape(P)[0]):
+            if np.count_nonzero(dotPair[i][:]) > 1:
+                continueFlag = True
+                break
+        for j in range(np.shape(P)[1]):
+            if np.count_nonzero(dotPair[:][j]) > 1:
+                continueFlag = True
+                break
+        if not continueFlag:
+            break
+
+    ## Dot matching using P . dotPair
+
+    for i in range(np.shape(P)[0]):
+        for j in range(np.shape(P)[1]):
+            if dotPair[i][j] > 0:
                 cv2.arrowedLine(
                     Frm_dot_movement,
-                    (int(X[i][0]) * scale, int(X[i][1]) * scale),
+                    (int(X[j][0]) * scale, int(X[j][1]) * scale),
                     (
-                        int(Y[j][0] * scale),
-                        int(Y[j][1]) * scale,
+                        int(Y[i][0] * scale),
+                        int(Y[i][1]) * scale,
                     ),
                     (0, 0, 255),
                     2,
                 )
                 break
+
     return Frm_dot_movement, dotPair
 
 

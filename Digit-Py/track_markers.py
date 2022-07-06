@@ -8,8 +8,8 @@ from show_transform import dotDetection, dotMatching, dotRegistration
 def main():
 
     tic = time.time()
-    # Frm = cv2.imread("./pics/marker_movement/Frm.png")
-    Frm = cv2.imread("./pics/marker_movement/Frm_Lack.png")
+    Frm = cv2.imread("./pics/marker_movement/Frm.png")
+    # Frm = cv2.imread("./pics/marker_movement/Frm_Lack.png")
     Frm0 = cv2.imread("./pics/marker_movement/Frm0.png")
     blobDetector = cv2.SimpleBlobDetector_create()
     keypoints_Frm, Frm_with_keypoints = dotDetection(blobDetector, Frm)
@@ -45,22 +45,24 @@ def main():
             1,
         )
 
-    print(G.shape)
-
-    ## Print the Correspondence
-    for i in range(len(Y)):
-        for j in range(len(Y)):
-            # print("({},{}), ".format(i, j), G[i][j])
-            # cv2.putText(
-            #     Frm_dot_movement,
-            #     "%.4f" % G[j][i],
-            #     (int(X[i][0]) * 2 - 5, int(X[i][1]) * 2 - 5),
-            #     cv2.FONT_HERSHEY_SIMPLEX,
-            #     0.5,
-            #     (0, 0, 255),
-            #     1,
-            # )
-            pass
+    for i in range(P.shape[0]):
+        for j in range(P.shape[1]):
+            if dotPair[i][j] > 0:
+                print("dotPair[{}][{}]: {}".format(i, j, dotPair[i][j]))
+    # ## Print the Correspondence
+    # for i in range(len(Y)):
+    #     for j in range(len(Y)):
+    #         print("({},{}), ".format(i, j), G[i][j])
+    #         cv2.putText(
+    #             Frm_dot_movement,
+    #             "%.4f" % P[j][i],
+    #             (int(X[i][0]) * 2 - 5, int(X[i][1]) * 2 - 5),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.5,
+    #             (0, 0, 255),
+    #             1,
+    #         )
+    #         pass
 
     cv2.imshow("Dot Movement", Frm_dot_movement)
     cv2.moveWindow("Dot Movement", 100, 100)
