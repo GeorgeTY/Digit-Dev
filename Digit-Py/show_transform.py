@@ -4,7 +4,6 @@ import time
 import numpy as np
 import digit_interface as Digit
 import matplotlib.pyplot as plt
-from pycpd import AffineRegistration
 from pycpd import DeformableRegistration
 
 # ifVGA = True
@@ -111,27 +110,22 @@ def dotMatching(X, Y, TY, Frm0, Frm, scale=2):
         interpolation=cv2.INTER_AREA,
     )
 
+    ## Gaussian Kernel
+
     for i in range(len(X)):
-        for j in range(len(TY)):
-            distance[i][j] = np.linalg.norm(X[i] - TY[j])
-        argmin_i = np.argmin(distance[i])
-
-        ## Temporary Implementation: Prevent the dot from being registered twice
-        while dotPair[i][argmin_i] == 1:
-            distance[i][argmin_i] = np.inf
-            argmin_i = np.argmin(distance[i])
-
-        dotPair[i][argmin_i] = 1
-        cv2.arrowedLine(
-            Frm_dot_movement,
-            (int(X[i][0]) * scale, int(X[i][1]) * scale),
-            (
-                int(Y[argmin_i][0] * scale),
-                int(Y[argmin_i][1]) * scale,
-            ),
-            (0, 0, 255),
-            2,
-        )
+        for j in range(len(Y)):
+            if dotPair[i, j] > 0:
+                cv2.arrowedLine(
+                    Frm_dot_movement,
+                    (int(X[i][0]) * scale, int(X[i][1]) * scale),
+                    (
+                        int(Y[j][0] * scale),
+                        int(Y[j][1]) * scale,
+                    ),
+                    (0, 0, 255),
+                    2,
+                )
+                break
     return Frm_dot_movement, dotPair
 
 
