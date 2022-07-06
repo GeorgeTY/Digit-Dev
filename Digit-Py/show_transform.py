@@ -5,7 +5,7 @@ import numpy as np
 import digit_interface as Digit
 import matplotlib.pyplot as plt
 from pycpd import DeformableRegistration
-from torch import argmax
+from genetic_calc import calcMatrixM
 
 # ifVGA = True
 ifVGA = False
@@ -106,8 +106,6 @@ def getRegParam(self):
 
 
 def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
-    dotPair = np.zeros_like(P)
-
     Frm_dot_movement = cv2.addWeighted(Frm, 0.65, Frm0, 0.35, 0)
     Frm_dot_movement = cv2.resize(
         Frm_dot_movement,
@@ -116,6 +114,7 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
     )
 
     ## Dot matching using P
+    dotPair = np.zeros_like(P)
     while True:
         continueFlag = False
         for i in range(np.shape(P)[0]):
@@ -145,6 +144,7 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
             break
 
     ## Dot matching using P . dotPair
+    # dotPair = calcMatrixM(P) ## Too slow
 
     for i in range(np.shape(P)[0]):
         for j in range(np.shape(P)[1]):
@@ -206,6 +206,7 @@ def main():
             cv2.waitKey(0)
             break
         elif getKey == ord("d"):  # Show difference
+            print("Press s to save P to file.")
             while True:
                 Frm = digit.get_frame()
                 Frm_b = Frm
@@ -227,6 +228,8 @@ def main():
                 cv2.imshow("Current", Frm_b_with_keypoints)
                 cv2.moveWindow("Current", 100, 550)
                 getKey = cv2.waitKey(1)
+                if getKey == ord("s"):
+                    np.savetxt("saved_P.out", P, delimiter=",")
                 if getKey == 27 or getKey == ord("q"):  # ESC or q
                     break
             break
