@@ -5,6 +5,7 @@ import numpy as np
 import digit_interface as Digit
 import matplotlib.pyplot as plt
 from pycpd import AffineRegistration
+from pycpd import DeformableRegistration
 
 # ifVGA = True
 ifVGA = False
@@ -92,11 +93,12 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
 def dotRegistration(keypoints_a, keypoints_b):
     X = np.array([keypoint.pt for keypoint in keypoints_a])
     Y = np.array([keypoint.pt for keypoint in keypoints_b])
-    TY, ((s, R), t) = AffineRegistration(
+
+    TY, (G, W) = DeformableRegistration(
         **{"X": X, "Y": Y}
     ).register()  ## CPD registration
 
-    return X, Y, TY, s, R, t
+    return X, Y, TY, G, W
 
 
 def dotMatching(X, Y, TY, Frm0, Frm, scale=2):
@@ -180,7 +182,7 @@ def main():
                 if len(keypoints_a) != len(keypoints_b):
                     continue
 
-                X, Y, TY, s, R, t = dotRegistration(keypoints_a, keypoints_b)
+                X, Y, TY, G, W = dotRegistration(keypoints_a, keypoints_b)
                 Frm_dot_movement, dotPair = dotMatching(X, Y, TY, Frm_a, Frm_b)
 
                 videoOut.write(Frm_dot_movement)
