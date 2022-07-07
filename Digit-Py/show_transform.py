@@ -1,4 +1,5 @@
 import sys
+from tkinter import W
 import cv2
 import time
 import numpy as np
@@ -27,10 +28,21 @@ def connectDigit(intensity=8):
 def setVideoEncoder(scale=2):
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     videoOut = cv2.VideoWriter()
+    timestr = time.strftime("%Y%m%d-%H%M%S")
     if ifVGA:
-        videoOut.open("output.mp4", fourcc, 30, (480 * scale, 640 * scale))
+        videoOut.open(
+            "output/markerDetect-{}.mp4".format(timestr),
+            fourcc,
+            30,
+            (480 * scale, 640 * scale),
+        )
     else:
-        videoOut.open("output.mp4", fourcc, 30, (240 * scale, 320 * scale))
+        videoOut.open(
+            "output/markerDetect-{}.mp4".format(timestr),
+            fourcc,
+            30,
+            (240 * scale, 320 * scale),
+        )
     return videoOut
 
 
@@ -77,6 +89,7 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
             1,
             circleColor,
             -1,
+            cv2.LINE_AA,
         )
     Frm_with_keypoints = cv2.putText(
         Frm_with_keypoints,
@@ -86,6 +99,7 @@ def dotDetection(blobDetector, Frm, circleColor=(0, 0, 255)):
         0.5,
         (255, 255, 255),
         1,
+        cv2.LINE_AA,
     )
     return keypoints, Frm_with_keypoints
 
@@ -143,9 +157,26 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
         if not continueFlag:
             break
 
+    ## Dot matching using TY distance
+    # distance = np.zeros((len(X), len(TY)))
+    # dotPair = np.zeros((len(X), len(TY))).astype(bool)
+
+    # for i in range(len(X)):
+    #     for j in range(len(TY)):
+    #         distance[i][j] = np.linalg.norm(X[i] - TY[j])
+    #     argmin_j = np.argmin(distance[i][:])
+
+    #     ## Temporary Implementation: Prevent the dot from being registered twice
+    #     while dotPair[i][argmin_j] == 1:
+    #         distance[i][argmin_j] = np.inf
+    #         argmin_j = np.argmin(distance[i][:])
+
+    #     dotPair[i][argmin_j] = 1
+
     ## Dot matching using P . dotPair
     # dotPair = calcMatrixM(P) ## Too slow
 
+    np.savetxt("output/saved_dotPair.out", dotPair, delimiter=",")
     for i in range(np.shape(P)[0]):
         for j in range(np.shape(P)[1]):
             if dotPair[i][j] > 0:
@@ -158,6 +189,7 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
                     ),
                     (0, 0, 255),
                     2,
+                    cv2.LINE_AA,
                 )
                 break
 
@@ -206,7 +238,7 @@ def main():
             cv2.waitKey(0)
             break
         elif getKey == ord("d"):  # Show difference
-            print("Press s to save P to file.")
+            print("Press s to save Data to file.")
             while True:
                 Frm = digit.get_frame()
                 Frm_b = Frm
@@ -229,14 +261,17 @@ def main():
                 cv2.moveWindow("Current", 100, 550)
                 getKey = cv2.waitKey(1)
                 if getKey == ord("s"):
-                    np.savetxt("saved_P.out", P, delimiter=",")
+                    np.savetxt("output/saved_P.out", P, delimiter=",")
+                    np.savetxt("output/saved_X.out", X, delimiter=" ")
+                    np.savetxt("output/saved_Y.out", Y, delimiter=" ")
+                    print("Data saved to file.")
                 if getKey == 27 or getKey == ord("q"):  # ESC or q
                     break
             break
 
     ## Turn off the digit
     videoOut.release()
-    print("Video saved to ./output.mp4")
+    print("Video saved to output/")
     digit.disconnect()
 
 

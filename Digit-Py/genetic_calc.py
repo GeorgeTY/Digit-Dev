@@ -161,7 +161,7 @@ def calcMatrixM(P, n_route=100, epoch=100000):
 
 
 def main():
-    P = np.loadtxt("saved_P.out", delimiter=",")
+    P = np.loadtxt("./output/saved_P.out", delimiter=",")
     P = rectMatrix(P)
     M = calcMatrixM(P, 50, 10000)
     print(M)
