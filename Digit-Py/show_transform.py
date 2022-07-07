@@ -1,15 +1,12 @@
 import sys
-from tkinter import W
 import cv2
 import time
 import numpy as np
+from global_params import *
 import digit_interface as Digit
 import matplotlib.pyplot as plt
 from pycpd import DeformableRegistration
 from genetic_calc import calcMatrixM
-
-# ifVGA = True
-ifVGA = False
 
 
 def connectDigit(intensity=8):
@@ -109,7 +106,7 @@ def dotRegistration(keypoints_a, keypoints_b):
     Y = np.array([keypoint.pt for keypoint in keypoints_b])
 
     TY, (G, W, P) = DeformableRegistration(
-        **{"X": X, "Y": Y}, alpha=0.002, beta=10
+        **{"X": X, "Y": Y}, alpha=alpha, beta=beta
     ).register()  ## CPD registration
 
     return X, Y, TY, G, W, P

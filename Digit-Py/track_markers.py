@@ -3,6 +3,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from show_transform import dotDetection, dotMatching, dotRegistration
+from global_params import *
 
 
 def main():
