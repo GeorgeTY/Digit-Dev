@@ -124,7 +124,11 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
         interpolation=cv2.INTER_AREA,
     )
 
-    ## Dot matching using P
+    #### Dot matching using P ####
+    dotPair = np.zeros_like(P)
+    for i in range(np.shape(P)[0]):
+        dotPair[i][np.argmax(P[i][:])] = 1
+
     # dotPair = np.zeros_like(P)
     # while True:
     #     continueFlag = False
@@ -153,26 +157,29 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
     #             break
     #     if not continueFlag:
     #         break
+    #### End of Dot matching using P ####
 
-    # Dot matching using TY distance
-    distance = np.zeros((len(X), len(TY)))
-    dotPair = np.zeros((len(X), len(TY))).astype(bool)
+    #### Dot matching using TY distance ####
+    # distance = np.zeros((len(X), len(TY)))
+    # dotPair = np.zeros((len(X), len(TY))).astype(bool)
 
-    for i in range(len(X)):
-        for j in range(len(TY)):
-            distance[i][j] = np.linalg.norm(X[i] - TY[j])
-        argmin_j = np.argmin(distance[i][:])
+    # for i in range(len(X)):
+    #     for j in range(len(TY)):
+    #         distance[i][j] = np.linalg.norm(X[i] - TY[j])
+    #     argmin_j = np.argmin(distance[i][:])
 
-        # ## Temporary Implementation: Prevent the dot from being registered twice
-        # while dotPair[i][argmin_j] == 1:
-        #     distance[i][argmin_j] = np.inf
-        #     argmin_j = np.argmin(distance[i][:])
-        # ## Temporary Implementation end
+    #     # ## Temporary Implementation: Prevent the dot from being registered twice
+    #     # while dotPair[i][argmin_j] == 1:
+    #     #     distance[i][argmin_j] = np.inf
+    #     #     argmin_j = np.argmin(distance[i][:])
+    #     # ## Temporary Implementation end
 
-        dotPair[i][argmin_j] = 1
+    #     dotPair[i][argmin_j] = 1
+    #### End of Dot matching using TY distance ####
 
-    ## Dot matching using P . dotPair
+    #### Dot matching using P . dotPair ####
     # dotPair = calcMatrixM(P) ## Too slow
+    #### End of Dot matching using P . dotPair ####
 
     np.savetxt("output/saved_dotPair.out", dotPair, delimiter=",")
     for i in range(np.shape(P)[0]):
