@@ -125,50 +125,51 @@ def dotMatching(X, Y, TY, P, Frm0, Frm, scale=2):
     )
 
     ## Dot matching using P
-    dotPair = np.zeros_like(P)
-    while True:
-        continueFlag = False
-        for i in range(np.shape(P)[0]):
-            argmax_j = np.argmax(P[i][:])
-            # dotPairProb[i][argmax_j] = P[i][argmax_j]
-            if np.count_nonzero(dotPair[:][argmax_j]) > 0:
-                j = argmax_j
-                argmax_i = np.argmax(dotPair[:][argmax_j])
-                if P[i][j] > dotPair[argmax_i][j]:
-                    dotPair[i][j] = P[i][j]
-                    dotPair[argmax_i][j] = 0
-                    P[argmax_i][j] = 0
-                else:
-                    P[i][j] = 0
-            else:
-                dotPair[i][argmax_j] = P[i][argmax_j]
+    # dotPair = np.zeros_like(P)
+    # while True:
+    #     continueFlag = False
+    #     for i in range(np.shape(P)[0]):
+    #         argmax_j = np.argmax(P[i][:])
+    #         # dotPairProb[i][argmax_j] = P[i][argmax_j]
+    #         if np.count_nonzero(dotPair[:][argmax_j]) > 0:
+    #             j = argmax_j
+    #             argmax_i = np.argmax(dotPair[:][argmax_j])
+    #             if P[i][j] > dotPair[argmax_i][j]:
+    #                 dotPair[i][j] = P[i][j]
+    #                 dotPair[argmax_i][j] = 0
+    #                 P[argmax_i][j] = 0
+    #             else:
+    #                 P[i][j] = 0
+    #         else:
+    #             dotPair[i][argmax_j] = P[i][argmax_j]
 
-        for i in range(np.shape(P)[0]):
-            if np.count_nonzero(dotPair[i][:]) > 1:
-                continueFlag = True
-                break
-        for j in range(np.shape(P)[1]):
-            if np.count_nonzero(dotPair[:][j]) > 1:
-                continueFlag = True
-                break
-        if not continueFlag:
-            break
+    #     for i in range(np.shape(P)[0]):
+    #         if np.count_nonzero(dotPair[i][:]) > 1:
+    #             continueFlag = True
+    #             break
+    #     for j in range(np.shape(P)[1]):
+    #         if np.count_nonzero(dotPair[:][j]) > 1:
+    #             continueFlag = True
+    #             break
+    #     if not continueFlag:
+    #         break
 
-    ## Dot matching using TY distance
-    # distance = np.zeros((len(X), len(TY)))
-    # dotPair = np.zeros((len(X), len(TY))).astype(bool)
+    # Dot matching using TY distance
+    distance = np.zeros((len(X), len(TY)))
+    dotPair = np.zeros((len(X), len(TY))).astype(bool)
 
-    # for i in range(len(X)):
-    #     for j in range(len(TY)):
-    #         distance[i][j] = np.linalg.norm(X[i] - TY[j])
-    #     argmin_j = np.argmin(distance[i][:])
+    for i in range(len(X)):
+        for j in range(len(TY)):
+            distance[i][j] = np.linalg.norm(X[i] - TY[j])
+        argmin_j = np.argmin(distance[i][:])
 
-    #     ## Temporary Implementation: Prevent the dot from being registered twice
-    #     while dotPair[i][argmin_j] == 1:
-    #         distance[i][argmin_j] = np.inf
-    #         argmin_j = np.argmin(distance[i][:])
+        # ## Temporary Implementation: Prevent the dot from being registered twice
+        # while dotPair[i][argmin_j] == 1:
+        #     distance[i][argmin_j] = np.inf
+        #     argmin_j = np.argmin(distance[i][:])
+        # ## Temporary Implementation end
 
-    #     dotPair[i][argmin_j] = 1
+        dotPair[i][argmin_j] = 1
 
     ## Dot matching using P . dotPair
     # dotPair = calcMatrixM(P) ## Too slow
