@@ -6,6 +6,7 @@ import os
 from digit_interface.digit import Digit
 from digit_interface.digit_handler import DigitHandler
 import pprint
+from gelsight import gsdevice
 
 # def fishye_calib(img, para):
 #     K, D, DIM = para
@@ -131,7 +132,14 @@ def digit_connect():
     return digit
 
 
-digit_R = digit_connect()
+# digit_R = digit_connect()
+def gsmini_connect():
+    dev = gsdevice.Camera(gsdevice.Finger.MINI, dev_id=0)
+    dev.connect()
+    return dev
+
+
+gsmini = gsmini_connect()
 
 
 def loopcenter(centerx, centery, cstep, I, mask, rwidth, r0, rstep, rrange):
@@ -790,7 +798,8 @@ def takeimg(dir, num, camnum=0, filename=None):
     # digit_R.get_frame
     i = 0
     while i < num + 1:
-        image = digit_R.get_frame(True)
+        # image = digit_R.get_frame(True)
+        image = gsmini.get_raw_image()
 
         cv2.imshow("tst", image)
         key = cv2.waitKey(0)
@@ -805,35 +814,50 @@ def takeimg(dir, num, camnum=0, filename=None):
             print(image.shape)
             i = i + 1
 
+    gsmini.stop_video()
     # camera.release()
 
 
 if __name__ == "__main__":
     # folder = "digiteye/calibrate_ballR2_planeElaster"
     # BallRad = 4 / 2
-    folder = "/home/jiangxin/ATISensor/digit-main/digiteye/calibrate_D20299_0504_2"
+    folder = (
+        "/home/jiangxin/uwu-dev/Digit-Dev/Digit-Py/digiteye/calibrate_gsmini_0329_1"
+    )
     # BallRad = 4 / 2
     BallRad = 3 / 2
     mouseX, mouseY, mouseCount = 10, 10, 0
 
-    campara = pickle.load(open("./digiteye/cam/cam2_calib.pkl", "rb"))  # 导入相机的校准参数
+    # campara = pickle.load(open("./digiteye/cam/cam2_calib.pkl", "rb"))  # 导入相机的校准参数
+    campara = None  # Disabled for gsmini
     maxcount = 10
 
-    takeimg(folder, maxcount, 0)
+    # Comment this line if you don't want to take images
+    try:
+        print("Taking images...")
+        takeimg(folder, maxcount, 0)
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
+        gsmini.stop_video()
+
     BALL_MANUAL = 1
 
     READ_RADIUS = 0
 
     # Pixmm = 10/485*2
-    Pixmm = 1 / 35
+    # Pixmm = 1 / 35 #From Digit
+    Pixmm = 18 / (600 / 2)  # From gsmini 18mm/600pix
 
     bins = 80
     zeropoint = -90
     lookscale = 180
 
     frame0 = cv2.imread(folder + "/0.jpg")
-    border = imgborder(frame0, 1, campara)
-    f0 = iniFrame(frame0)
+    # border = imgborder(frame0, 1, campara)
+    border = imgborder(frame0, 0, None)  # For gsmini
+
+    # f0 = iniFrame(frame0)
+    f0 = frame0
     f0 = f0[border[0] : border[1], border[2] : border[3], :]
     ImList = []
     # border_1 = imgborder(frame0, 1, campara)
